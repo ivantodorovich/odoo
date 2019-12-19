@@ -276,7 +276,7 @@ class Company(models.Model):
 
     def set_onboarding_step_done(self, step_name):
         if self[step_name] == 'not_done':
-            self[step_name] = 'just_done'
+            self.sudo().write({step_name: 'just_done'})
 
     def get_and_update_onbarding_state(self, onboarding_state, steps_states):
         """ Needed to display onboarding animations only one time. """
