@@ -41,7 +41,6 @@
                         <group>
                             <field name="active" invisible="1"/>
                             <field name="company_id" invisible="1"/>
-                            <field name="states_count" invisible="1"/>
                             <field name="company_country_id" invisible="1"/>
                             <field name="foreign_vat_header_mode" invisible="1"/>
                             <field name="name"/>
@@ -56,7 +55,7 @@
                                 attrs="{'required': [('foreign_vat', '!=', False)]}"
                                 options="{'no_open': True, 'no_create': True}"/>
                             <field name="state_ids" widget="many2many_tags" domain="[('country_id', '=', country_id)]"
-                                attrs="{'invisible': ['|', '|', '&amp;', ('auto_apply', '!=', True), ('foreign_vat', '=', False), ('country_id', '=', False), ('states_count', '=', 0)]}"/>
+                                attrs="{'invisible': ['|', '&amp;', ('auto_apply', '!=', True), ('foreign_vat', '=', False), ('country_id.state_ids', '=', [])]}"/>
                             <label for="zip_from" string="Zip Range"
                                 attrs="{'invisible': ['|', ('auto_apply', '!=', True), ('country_id', '=', False)]}"/>
                             <div attrs="{'invisible': ['|', ('auto_apply', '!=', True), ('country_id', '=', False)]}">

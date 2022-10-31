@@ -40,8 +40,6 @@ class AccountFiscalPosition(models.Model):
     state_ids = fields.Many2many('res.country.state', string='Federal States')
     zip_from = fields.Char(string='Zip Range From')
     zip_to = fields.Char(string='Zip Range To')
-    # To be used in hiding the 'Federal States' field('attrs' in view side) when selected 'Country' has 0 states.
-    states_count = fields.Integer(compute='_compute_states_count')
     foreign_vat = fields.Char(string="Foreign Tax ID", help="The tax ID of your company in the region mapped by this fiscal position.")
 
     # Technical field used to display a banner on top of foreign vat fiscal positions,
@@ -49,10 +47,6 @@ class AccountFiscalPosition(models.Model):
     foreign_vat_header_mode = fields.Selection(
         selection=[('templates_found', "Templates Found"), ('no_template', "No Template")],
         compute='_compute_foreign_vat_header_mode')
-
-    def _compute_states_count(self):
-        for position in self:
-            position.states_count = len(position.country_id.state_ids)
 
     @api.depends('foreign_vat', 'country_id')
     def _compute_foreign_vat_header_mode(self):
@@ -132,7 +126,6 @@ class AccountFiscalPosition(models.Model):
         if self.country_id:
             self.zip_from = self.zip_to = self.country_group_id = False
             self.state_ids = [(5,)]
-            self.states_count = len(self.country_id.state_ids)
 
     @api.onchange('country_group_id')
     def _onchange_country_group_id(self):
