@@ -24,6 +24,7 @@ import json
 from lxml import etree
 from contextlib import closing
 from reportlab.graphics.barcode import createBarcodeDrawing
+from reportlab.graphics.renderSVG import drawToString as drawSVGToString
 from PyPDF2 import PdfFileWriter, PdfFileReader, utils
 from collections import OrderedDict
 from collections.abc import Iterable
@@ -537,6 +538,7 @@ class IrActionsReport(models.Model):
             # Level 'Q' – up to 25% damage
             # Level 'H' – up to 30% damage
             'barLevel': ('L', lambda x: x in ('L', 'M', 'Q', 'H') and x or 'L'),
+            'filetype': ('png', lambda x: x in ('png', 'svg') and x or 'png'),
         }
         kwargs = {k: validator(kwargs.get(k, v)) for k, (v, validator) in defaults.items()}
         kwargs['humanReadable'] = kwargs.pop('humanreadable')
@@ -555,7 +557,7 @@ class IrActionsReport(models.Model):
                 kwargs['barBorder'] = 0
 
         try:
-            barcode = createBarcodeDrawing(barcode_type, value=value, format='png', **kwargs)
+            barcode = createBarcodeDrawing(barcode_type, value=value, **kwargs)
 
             # If a mask is asked and it is available, call its function to
             # post-process the generated QR-code image
@@ -565,7 +567,10 @@ class IrActionsReport(models.Model):
                 if mask_to_apply:
                     mask_to_apply(kwargs['width'], kwargs['height'], barcode)
 
-            return barcode.asString('png')
+            if kwargs['filetype'] == 'svg':
+                return drawSVGToString(barcode)
+            return barcode.asString(kwargs['filetype'])
+
         except (ValueError, AttributeError):
             if barcode_type == 'Code128':
                 raise ValueError("Cannot convert into barcode.")

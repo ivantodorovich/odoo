@@ -1463,7 +1463,7 @@ class Root(object):
             return
 
         mime, _params = cgi.parse_header(headers.get('Content-Type', ''))
-        if not mime.startswith('image/'):
+        if mime == 'image/svg+xml' or not mime.startswith('image/'):
             return
 
         headers['Content-Security-Policy'] = "default-src 'none'"

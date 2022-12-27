@@ -1989,7 +1989,7 @@ class ReportController(http.Controller):
         except (ValueError, AttributeError):
             raise werkzeug.exceptions.HTTPException(description='Cannot convert into barcode.')
 
-        return request.make_response(barcode, headers=[('Content-Type', 'image/png')])
+        return request.make_response(barcode, headers=[('Content-Type', guess_mimetype(barcode))])
 
     @http.route(['/report/download'], type='http', auth="user")
     def report_download(self, data, context=None):
