@@ -4814,30 +4814,72 @@ class BaseModel(metaclass=MetaModel):
         valid_ids = set([r[0] for r in self._cr.fetchall()] + new_ids)
         return self.browse(i for i in self._ids if i in valid_ids)
 
-    def _check_recursion(self, parent=None):
+    def _check_recursion(self, parent=None, raise_if_found=False):
         """
         Verifies that there is no loop in a hierarchical structure of records,
         by following the parent relationship using the **parent** field until a
         loop is detected or until a top-level record is found.
 
         :param parent: optional parent field name (default: ``self._parent_name``)
+        :param raise_if_found: Optional. Raise ``ValidationError`` if a loop is found.
         :return: **True** if no loop was found, **False** otherwise.
         """
+        if not self:
+            return True
         if not parent:
             parent = self._parent_name
-
+        else:
+            field = self._fields.get(parent)
+            if (
+                not field or not field.store
+                or field.type != "many2one"
+                or field.comodel_name != self._name
+            ):
+                raise ValueError(f"Invalid parent field name: {parent}")
         # must ignore 'active' flag, ir.rules, etc. => direct SQL query
-        cr = self._cr
         self.flush_model([parent])
-        query = 'SELECT "%s" FROM "%s" WHERE id = %%s' % (parent, self._table)
-        for id in self.ids:
-            current_id = id
-            while current_id:
-                cr.execute(query, (current_id,))
-                result = cr.fetchone()
-                current_id = result[0] if result else None
-                if current_id == id:
-                    return False
+        self.env.cr.execute(
+            """
+                WITH RECURSIVE __check_recursion(id, {parent_name}, path, cycle) AS (
+                    SELECT
+                        row.id,
+                        row.{parent_name},
+                        ARRAY[row.id],
+                        false
+                    FROM {table} AS row
+                    WHERE row.id IN %s
+                UNION ALL
+                    SELECT
+                        row.id,
+                        row.{parent_name},
+                        c.path || row.id,
+                        row.id = ANY(c.path)
+                    FROM
+                        {table} AS row,
+                        __check_recursion AS c
+                    WHERE row.id = c.{parent_name}
+                    AND NOT c.cycle
+                )
+                SELECT id FROM __check_recursion WHERE cycle;
+            """.format(
+                table=self._table,
+                parent_name=parent,
+            ),
+            (tuple(self.ids),)
+        )
+        recursive_record_ids = [r[0] for r in self.env.cr.fetchall()]
+        if recursive_record_ids:
+            if raise_if_found:
+                raise ValidationError(
+                    _(
+                        "You can't create recursive %(description)s (%(model)s) "
+                        "hierarchies through field `{parent_name}`.",
+                        description=self.env["ir.model"]._get(self._name).name,
+                        model=self._name,
+                        parent_name=parent,
+                    )
+                )
+            return False
         return True
 
     def _check_m2m_recursion(self, field_name):

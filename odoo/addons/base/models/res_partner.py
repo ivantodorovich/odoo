@@ -99,8 +99,7 @@ class PartnerCategory(models.Model):
 
     @api.constrains('parent_id')
     def _check_parent_id(self):
-        if not self._check_recursion():
-            raise ValidationError(_('You can not create recursive tags.'))
+        self._check_recursion(raise_if_found=True)
 
     def name_get(self):
         """ Return the categories' display name, including their direct
@@ -405,8 +404,7 @@ class Partner(models.Model):
 
     @api.constrains('parent_id')
     def _check_parent_id(self):
-        if not self._check_recursion():
-            raise ValidationError(_('You cannot create recursive Partner hierarchies.'))
+        self._check_recursion(raise_if_found=True)
 
     def copy(self, default=None):
         self.ensure_one()

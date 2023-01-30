@@ -277,8 +277,7 @@ class Company(models.Model):
 
     @api.constrains('parent_id')
     def _check_parent_id(self):
-        if not self._check_recursion():
-            raise ValidationError(_('You cannot create recursive companies.'))
+        self._check_recursion(raise_if_found=True)
 
     def open_company_edit_report(self):
         warnings.warn("Since 17.0.", DeprecationWarning, 2)

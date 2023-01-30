@@ -651,24 +651,22 @@ class TestPartnerRecursion(TransactionCase):
         self.assertTrue(self.p3._check_recursion())
         self.assertTrue((self.p1 + self.p2 + self.p3)._check_recursion())
 
-    # split 101, 102, 103 tests to force SQL rollback between them
-
     def test_101_res_partner_recursion(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaisesRegex(ValidationError, r"You can't create recursive .*"):
             self.p1.write({'parent_id': self.p3.id})
 
     def test_102_res_partner_recursion(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaisesRegex(ValidationError, r"You can't create recursive .*"):
             self.p2.write({'parent_id': self.p3.id})
 
     def test_103_res_partner_recursion(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaisesRegex(ValidationError, r"You can't create recursive .*"):
             self.p3.write({'parent_id': self.p3.id})
 
     def test_104_res_partner_recursion_indirect_cycle(self):
         """ Indirect hacky write to create cycle in children """
         p3b = self.p1.create({'name': 'Elmtree Grand-Child 1.2', 'parent_id': self.p2.id})
-        with self.assertRaises(ValidationError):
+        with self.assertRaisesRegex(ValidationError, r"You can't create recursive .*"):
             self.p2.write({'child_ids': [Command.update(self.p3.id, {'parent_id': p3b.id}),
                                          Command.update(p3b.id, {'parent_id': self.p3.id})]})
 
