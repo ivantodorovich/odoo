@@ -417,7 +417,15 @@ class Field(MetaField('DummyField', (object,), {})):
                 attrs.clear()
                 modules.clear()
                 continue
-            attrs.update(field.args)
+            # special case for depends and depends_context: we merge them
+            if 'depends' in field.args:
+                attrs.setdefault('depends', ())
+                attrs['depends'] = tuple(set(attrs['depends']) | set(field.args['depends']))
+            if 'depends_context' in field.args:
+                attrs.setdefault('depends_context', ())
+                attrs['depends_context'] = tuple(set(attrs['depends_context']) | set(field.args['depends_context']))
+            attrs_to_keep = ('depends', 'depends_context')
+            attrs.update({k: v for k, v in field.args.items() if k not in attrs_to_keep})
             if field._module:
                 modules.append(field._module)
         attrs.update(self.args)
